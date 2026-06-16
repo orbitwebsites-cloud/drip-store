@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://drip-store.vercel.app/sitemap.xml
