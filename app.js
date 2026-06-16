@@ -1,6 +1,5 @@
 /* ============================================================
    DRIP — fashion & beauty store
-   Vanilla JS: product catalog, variant picker, cart (localStorage)
    Cart key format: "productId::color::size"
    ============================================================ */
 
@@ -14,8 +13,14 @@ const PRODUCTS = [
     price: 29.99,
     rating: 4.8,
     reviews: 283,
-    description: "Breathable cotton-linen blend, relaxed fit, mid-length silhouette. Perfect for summer.",
-    image: "https://oss-cf.cjdropshipping.com/product/2025/04/21/06/359a0834-5390-4e4b-b6e9-68b094ad346d.jpg",
+    description: "Breathable cotton-linen blend, relaxed fit, mid-length silhouette. Ships from US in 3–8 days, no Chinese packaging.",
+    images: [
+      "https://oss-cf.cjdropshipping.com/product/2025/04/21/06/359a0834-5390-4e4b-b6e9-68b094ad346d.jpg",
+      "https://cf.cjdropshipping.com/quick/product/8165a3f1-a5c2-473b-9e07-64556aa887a0.jpg",
+      "https://cf.cjdropshipping.com/quick/product/67855e43-894d-43bb-b8ed-4723c915f7bd.jpg",
+      "https://cf.cjdropshipping.com/quick/product/57a5dbc0-f919-456d-ab49-0357da8edfb8.jpg",
+    ],
+    videos: [],
     colors: ["Black", "Blue", "Khaki", "Orange", "Pink"],
     colorHex: { Black: "#1e293b", Blue: "#3b82f6", Khaki: "#a16207", Orange: "#fb923c", Pink: "#f9a8d4" },
     sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
@@ -29,8 +34,12 @@ const PRODUCTS = [
     price: 34.99,
     rating: 4.7,
     reviews: 1152,
-    description: "Multi-pocket cargo pants with drawstring waist. Hip-hop streetwear style, all-day comfort.",
-    image: "https://oss-cf.cjdropshipping.com/product/2023/09/22/07/a6f6b5a8-ca1a-4a22-9a6e-bb1a73c2e5a4.jpg",
+    description: "Multi-pocket cargo pants with drawstring waist. Hip-hop streetwear style, all-day comfort. Ships from US.",
+    images: [
+      "https://oss-cf.cjdropshipping.com/product/2023/09/22/07/a6f6b5a8-ca1a-4a22-9a6e-bb1a73c2e5a4.jpg",
+      "https://oss-cf.cjdropshipping.com/product/2023/09/22/07/b1c9d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e.jpg",
+    ],
+    videos: [],
     colors: ["Black", "Army Green", "Grey", "Khaki", "Navy"],
     colorHex: { Black: "#1e293b", "Army Green": "#4d7c0f", Grey: "#6b7280", Khaki: "#a16207", Navy: "#1e3a5f" },
     sizes: ["S", "M", "L", "XL", "2XL", "3XL"],
@@ -44,8 +53,12 @@ const PRODUCTS = [
     price: 59.99,
     rating: 4.9,
     reviews: 733,
-    description: "V-shape facial lifting, EMS microcurrent, blue light therapy. 5 modes for a spa face at home.",
-    image: "https://oss-cf.cjdropshipping.com/product/2024/05/08/09/8e2d5e20-3c45-4887-9d20-4f3e0a5e6c3b.jpg",
+    description: "V-shape facial lifting, EMS microcurrent, blue light therapy. 5 modes for a spa face at home. Free US shipping.",
+    images: [
+      "https://oss-cf.cjdropshipping.com/product/2024/05/08/09/8e2d5e20-3c45-4887-9d20-4f3e0a5e6c3b.jpg",
+      "https://oss-cf.cjdropshipping.com/product/2024/05/08/09/ems-mode-diagram.jpg",
+    ],
+    videos: [],
     colors: ["White"],
     colorHex: { White: "#f8fafc" },
     sizes: [],
@@ -63,8 +76,9 @@ const FREE_SHIP = 50;
 
 // --- State ---
 let activeCategory = "all";
-let cart = loadCart(); // { "women-dress::Black::M": qty, ... }
-let pickerProduct = null;
+let cart = loadCart();
+let detailProduct = null;   // product open in detail modal
+let detailMediaIdx = 0;     // current image/video index
 let pickerColor = null;
 let pickerSize = null;
 
@@ -72,8 +86,9 @@ let pickerSize = null;
 const $ = (sel) => document.querySelector(sel);
 const fmt = (n) => `$${Number(n).toFixed(2)}`;
 const stars = (r) => "★".repeat(Math.round(r)) + "☆".repeat(5 - Math.round(r));
-const cartKey = (id, color, size) => size ? `${id}::${color}::${size}` : `${id}::${color}::_`;
+const cartKey = (id, color, size) => `${id}::${color}::${size || "_"}`;
 const parseKey = (key) => { const [id, color, size] = key.split("::"); return { id, color, size: size === "_" ? "" : size }; };
+const allMedia = (p) => [...p.images, ...p.videos.map(v => ({ type: "video", src: v }))];
 
 function loadCart() {
   try { return JSON.parse(localStorage.getItem("drip-cart")) || {}; }
@@ -81,7 +96,7 @@ function loadCart() {
 }
 function saveCart() { localStorage.setItem("drip-cart", JSON.stringify(cart)); }
 
-// --- Render: category filters ---
+// --- Filters ---
 function renderFilters() {
   const wrap = $("#filters");
   wrap.innerHTML = CATEGORIES.map((c) => `
@@ -92,93 +107,135 @@ function renderFilters() {
   );
 }
 
-// --- Render: product grid ---
+// --- Product grid ---
 function renderGrid() {
   const grid = $("#productGrid");
   const items = PRODUCTS.filter((p) => activeCategory === "all" || p.category === activeCategory);
   grid.innerHTML = items.map((p) => `
-    <article class="card">
+    <article class="card" data-id="${p.id}" role="button" tabindex="0">
       <div class="card-art">
         ${p.badge ? `<span class="badge">${p.badge}</span>` : ""}
-        <img src="${p.image}" alt="${p.name}" loading="lazy" onerror="this.style.display='none'" />
-        <div class="card-img-fallback" style="background: linear-gradient(135deg, #f1f5f9, #e2e8f0);" aria-hidden="true"></div>
+        <img src="${p.images[0]}" alt="${p.name}" loading="lazy"
+          onerror="this.parentElement.classList.add('no-img')" />
+        ${p.images.length > 1 ? `<span class="card-img-count">+${p.images.length - 1} photos</span>` : ""}
       </div>
       <div class="card-body">
         <span class="card-category">${p.category}</span>
         <span class="card-name">${p.name}</span>
-        <span class="card-desc">${p.description}</span>
         <span class="card-rating">${stars(p.rating)} <span class="muted">${p.rating} (${p.reviews})</span></span>
         <div class="card-foot">
           <span class="card-price">${fmt(p.price)}</span>
-          <button class="add-btn" data-id="${p.id}">Add to bag</button>
+          <button class="add-btn" data-id="${p.id}">View &amp; Add</button>
         </div>
       </div>
     </article>
   `).join("");
+
+  grid.querySelectorAll(".card").forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (!e.target.closest(".add-btn")) openDetail(card.dataset.id);
+    });
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter") openDetail(card.dataset.id); });
+  });
   grid.querySelectorAll(".add-btn").forEach((btn) =>
-    btn.addEventListener("click", () => openPicker(btn.dataset.id))
+    btn.addEventListener("click", (e) => { e.stopPropagation(); openDetail(btn.dataset.id); })
   );
 }
 
-// --- Variant Picker ---
-function openPicker(productId) {
-  pickerProduct = PRODUCTS.find((p) => p.id === productId);
-  if (!pickerProduct) return;
-  pickerColor = pickerProduct.colors[0];
-  pickerSize = pickerProduct.sizes[0] || null;
-  renderPicker();
-  $("#picker").classList.add("open");
-  $("#pickerOverlay").classList.add("open");
+// --- Product detail modal ---
+function openDetail(productId) {
+  detailProduct = PRODUCTS.find((p) => p.id === productId);
+  if (!detailProduct) return;
+  detailMediaIdx = 0;
+  pickerColor = detailProduct.colors[0];
+  pickerSize = detailProduct.sizes[0] || null;
+  renderDetail();
+  $("#detail").classList.add("open");
+  $("#detailOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
 }
 
-function closePicker() {
-  $("#picker").classList.remove("open");
-  $("#pickerOverlay").classList.remove("open");
-  pickerProduct = null;
+function closeDetail() {
+  $("#detail").classList.remove("open");
+  $("#detailOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+  detailProduct = null;
 }
 
-function renderPicker() {
-  const p = pickerProduct;
-  if (!p) return;
-  $("#pickerTitle").textContent = p.name;
-  $("#pickerPrice").textContent = fmt(p.price);
+function renderDetail() {
+  const p = detailProduct;
+  const media = allMedia(p);
 
-  // Color swatches
-  const colorWrap = $("#pickerColors");
-  colorWrap.innerHTML = `<p class="picker-label">Color: <strong id="colorLabel">${pickerColor}</strong></p>` +
+  // Main display
+  const mainEl = $("#detailMain");
+  const current = media[detailMediaIdx];
+  if (typeof current === "object" && current.type === "video") {
+    mainEl.innerHTML = `<video src="${current.src}" controls autoplay muted playsinline class="detail-video"></video>`;
+  } else {
+    mainEl.innerHTML = `<img src="${current || p.images[0]}" alt="${p.name}" class="detail-img" />`;
+  }
+
+  // Thumbnails
+  const thumbEl = $("#detailThumbs");
+  thumbEl.innerHTML = media.map((m, i) => {
+    const isVideo = typeof m === "object" && m.type === "video";
+    const src = isVideo ? p.images[0] : m;
+    return `<button class="thumb-btn ${i === detailMediaIdx ? "active" : ""}" data-idx="${i}">
+      ${isVideo ? `<span class="thumb-play">▶</span>` : ""}
+      <img src="${src}" alt="view ${i + 1}" loading="lazy" onerror="this.parentElement.style.display='none'" />
+    </button>`;
+  }).join("");
+  thumbEl.querySelectorAll(".thumb-btn").forEach((btn) =>
+    btn.addEventListener("click", () => { detailMediaIdx = parseInt(btn.dataset.idx); renderDetail(); })
+  );
+
+  // Info
+  $("#detailName").textContent = p.name;
+  $("#detailPrice").textContent = fmt(p.price);
+  $("#detailRating").innerHTML = `${stars(p.rating)} <span class="muted">${p.rating} (${p.reviews} reviews)</span>`;
+  $("#detailDesc").textContent = p.description;
+
+  // Color picker
+  const colorWrap = $("#detailColors");
+  colorWrap.innerHTML = `<p class="picker-label">Color: <strong>${pickerColor}</strong></p>` +
     p.colors.map((c) => `
       <button class="swatch-btn ${c === pickerColor ? "selected" : ""}" data-color="${c}"
-        style="background:${p.colorHex[c] || '#ccc'}; border:2px solid ${c === pickerColor ? '#000' : 'transparent'};"
+        style="background:${p.colorHex[c] || "#ccc"}; border-color:${c === pickerColor ? "#000" : "transparent"};"
         title="${c}"></button>
     `).join("");
-  colorWrap.querySelectorAll(".swatch-btn").forEach((btn) => {
-    btn.addEventListener("click", () => { pickerColor = btn.dataset.color; renderPicker(); });
-  });
+  colorWrap.querySelectorAll(".swatch-btn").forEach((btn) =>
+    btn.addEventListener("click", () => { pickerColor = btn.dataset.color; renderDetail(); })
+  );
 
-  // Size buttons
-  const sizeWrap = $("#pickerSizes");
+  // Size picker
+  const sizeWrap = $("#detailSizes");
   if (p.sizes.length === 0) {
     sizeWrap.innerHTML = "";
   } else {
-    sizeWrap.innerHTML = `<p class="picker-label">Size: <strong id="sizeLabel">${pickerSize}</strong></p>` +
+    sizeWrap.innerHTML = `<p class="picker-label">Size: <strong>${pickerSize}</strong></p>` +
       p.sizes.map((s) => `
         <button class="size-btn ${s === pickerSize ? "selected" : ""}" data-size="${s}">${s}</button>
       `).join("");
-    sizeWrap.querySelectorAll(".size-btn").forEach((btn) => {
-      btn.addEventListener("click", () => { pickerSize = btn.dataset.size; renderPicker(); });
-    });
+    sizeWrap.querySelectorAll(".size-btn").forEach((btn) =>
+      btn.addEventListener("click", () => { pickerSize = btn.dataset.size; renderDetail(); })
+    );
   }
+
+  // Nav arrows
+  $("#detailPrev").style.display = detailMediaIdx > 0 ? "flex" : "none";
+  $("#detailNext").style.display = detailMediaIdx < media.length - 1 ? "flex" : "none";
 }
 
-function addFromPicker() {
-  if (!pickerProduct) return;
-  if (pickerProduct.sizes.length > 0 && !pickerSize) { showToast("Please select a size"); return; }
-  const key = cartKey(pickerProduct.id, pickerColor, pickerSize);
+function addFromDetail() {
+  const p = detailProduct;
+  if (!p) return;
+  if (p.sizes.length > 0 && !pickerSize) { showToast("Please select a size"); return; }
+  const key = cartKey(p.id, pickerColor, pickerSize);
   cart[key] = (cart[key] || 0) + 1;
   saveCart();
   updateCartUI();
-  showToast(`${pickerProduct.name} added to your bag ✦`);
-  closePicker();
+  showToast(`${p.name} added ✦`);
+  closeDetail();
 }
 
 // --- Cart ---
@@ -212,9 +269,12 @@ function updateCartUI() {
       const p = PRODUCTS.find((x) => x.id === id);
       if (!p) return "";
       const variant = [color, size].filter(Boolean).join(", ");
+      const thumb = p.images[0] || "";
       return `
         <div class="cart-item">
-          <div class="ci-art" style="background:${p.colorHex[color] || '#e2e8f0'}"></div>
+          <div class="ci-thumb" style="background:${p.colorHex[color] || "#e2e8f0"}">
+            ${thumb ? `<img src="${thumb}" alt="${p.name}" onerror="this.style.display='none'" />` : ""}
+          </div>
           <div class="ci-info">
             <div class="ci-name">${p.name}</div>
             <div class="ci-price">${fmt(p.price)} · ${variant}</div>
@@ -238,7 +298,7 @@ function updateCartUI() {
   $("#cartTotal").textContent = fmt(subtotal);
   const prog = $("#cartProgress");
   if (subtotal === 0) prog.textContent = "";
-  else if (subtotal >= FREE_SHIP) prog.textContent = "🎉 You've unlocked free shipping!";
+  else if (subtotal >= FREE_SHIP) prog.textContent = "🎉 Free shipping unlocked!";
   else prog.textContent = `Add ${fmt(FREE_SHIP - subtotal)} more for free shipping.`;
 }
 
@@ -278,7 +338,7 @@ async function checkout() {
       body: JSON.stringify({ items: cart }),
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.url) throw new Error(data.error || "Checkout unavailable right now.");
+    if (!res.ok || !data.url) throw new Error(data.error || "Checkout unavailable.");
     window.location.href = data.url;
   } catch (err) {
     showToast(err.message);
@@ -297,12 +357,19 @@ function init() {
   $("#cartClose").addEventListener("click", closeCart);
   $("#cartOverlay").addEventListener("click", closeCart);
   $("#checkoutBtn").addEventListener("click", checkout);
-  $("#pickerOverlay").addEventListener("click", closePicker);
-  $("#pickerClose").addEventListener("click", closePicker);
-  $("#pickerAddBtn").addEventListener("click", addFromPicker);
+  $("#detailOverlay").addEventListener("click", closeDetail);
+  $("#detailClose").addEventListener("click", closeDetail);
+  $("#detailAddBtn").addEventListener("click", addFromDetail);
+  $("#detailPrev").addEventListener("click", () => { detailMediaIdx = Math.max(0, detailMediaIdx - 1); renderDetail(); });
+  $("#detailNext").addEventListener("click", () => {
+    if (detailProduct) detailMediaIdx = Math.min(allMedia(detailProduct).length - 1, detailMediaIdx + 1);
+    renderDetail();
+  });
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { closeCart(); closePicker(); }
+    if (e.key === "Escape") { closeCart(); closeDetail(); }
+    if (e.key === "ArrowLeft" && detailProduct) { detailMediaIdx = Math.max(0, detailMediaIdx - 1); renderDetail(); }
+    if (e.key === "ArrowRight" && detailProduct) { detailMediaIdx = Math.min(allMedia(detailProduct).length - 1, detailMediaIdx + 1); renderDetail(); }
   });
 
   if (new URLSearchParams(location.search).get("canceled")) {

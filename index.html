@@ -142,18 +142,35 @@
     </div>
   </aside>
 
-  <!-- Variant picker modal -->
-  <div class="cart-overlay" id="pickerOverlay"></div>
-  <div class="picker-modal" id="picker" role="dialog" aria-label="Select options">
-    <div class="picker-header">
-      <h3 id="pickerTitle"></h3>
-      <button class="cart-close" id="pickerClose" aria-label="Close">&times;</button>
-    </div>
-    <div id="pickerColors"></div>
-    <div id="pickerSizes"></div>
-    <div class="picker-footer">
-      <span class="picker-price" id="pickerPrice"></span>
-      <button class="btn btn-primary" id="pickerAddBtn">Add to bag</button>
+  <!-- Product detail modal -->
+  <div class="cart-overlay" id="detailOverlay"></div>
+  <div class="detail-modal" id="detail" role="dialog" aria-label="Product detail">
+    <button class="detail-close" id="detailClose" aria-label="Close">&times;</button>
+
+    <div class="detail-layout">
+      <!-- Left: media -->
+      <div class="detail-media">
+        <div class="detail-main" id="detailMain"></div>
+        <button class="detail-arrow detail-prev" id="detailPrev" aria-label="Previous">&#8249;</button>
+        <button class="detail-arrow detail-next" id="detailNext" aria-label="Next">&#8250;</button>
+        <div class="detail-thumbs" id="detailThumbs"></div>
+      </div>
+
+      <!-- Right: info -->
+      <div class="detail-info">
+        <div class="detail-rating" id="detailRating"></div>
+        <h2 class="detail-name" id="detailName"></h2>
+        <div class="detail-price" id="detailPrice"></div>
+        <p class="detail-desc" id="detailDesc"></p>
+        <div class="detail-colors" id="detailColors"></div>
+        <div class="detail-sizes" id="detailSizes"></div>
+        <button class="btn btn-primary btn-full detail-add" id="detailAddBtn">Add to bag</button>
+        <div class="detail-trust">
+          <span>🇺🇸 US warehouse</span>
+          <span>📦 No Chinese packaging</span>
+          <span>⚡ 3–8 day delivery</span>
+        </div>
+      </div>
     </div>
   </div>
 
