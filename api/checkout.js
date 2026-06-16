@@ -9,9 +9,13 @@ const Stripe = require("stripe");
 // the productId prefix and look up price here so it can't be tampered client-side.
 // Prices in cents (USD). Keep in sync with app.js PRODUCTS.
 const CATALOG = {
-  "women-dress": { name: "Loose Linen Midi Dress",    amount: 2999 },
-  "men-cargo":   { name: "Streetwear Cargo Pants",    amount: 3499 },
-  "ems-tool":    { name: "EMS Facial Beauty Tool",    amount: 5999 },
+  "women-dress":  { name: "Loose Linen Midi Dress",       amount: 2999 },
+  "men-cargo":    { name: "Streetwear Cargo Pants",        amount: 3499 },
+  "ems-tool":     { name: "EMS Facial Beauty Tool",        amount: 5999 },
+  "women-hoodie": { name: "Oversized Y2K Crop Hoodie",     amount: 2499 },
+  "men-puffer":   { name: "Lightweight Puffer Vest",       amount: 3999 },
+  "led-nail-lamp":{ name: "48W UV/LED Gel Nail Lamp",      amount: 1999 },
+  "bucket-hat":   { name: "Vintage Washed Bucket Hat",     amount: 1499 },
 };
 
 const FREE_SHIP_THRESHOLD = 5000; // $50.00 in cents
