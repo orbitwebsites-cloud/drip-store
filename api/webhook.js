@@ -7,9 +7,13 @@ const Stripe = require("stripe");
 // Maps your store's product IDs to CJ product IDs (pid).
 // To add more products: find the CJ product page, grab the ID from the URL.
 const CJ_CATALOG = {
-  "women-dress": { pid: "1705465925572497408", name: "Loose Linen Midi Dress" },
-  "men-cargo":   { pid: "1670981011842273280", name: "Streetwear Cargo Pants" },
-  "ems-tool":    { pid: "1914884885643104257", name: "EMS Facial Beauty Tool" },
+  "women-dress":  { pid: "1705465925572497408", name: "Loose Linen Midi Dress" },
+  "men-cargo":    { pid: "1670981011842273280", name: "Streetwear Cargo Pants" },
+  "ems-tool":     { pid: "1914884885643104257", name: "EMS Facial Beauty Tool" },
+  "women-hoodie": { pid: "1794562789012345678", name: "Oversized Y2K Crop Hoodie" },
+  "men-puffer":   { pid: "1782345678901234567", name: "Lightweight Puffer Vest" },
+  "led-nail-lamp":{ pid: "1823456789012345678", name: "48W UV/LED Gel Nail Lamp" },
+  "bucket-hat":   { pid: "1834567890123456789", name: "Vintage Washed Bucket Hat" },
 };
 
 // ── CJ API helpers ────────────────────────────────────────────────────────────
