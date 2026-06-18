@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://drip-store-1.vercel.app/sitemap.xml
+Sitemap: https://drip.orbitboyzz.me/sitemap.xml
